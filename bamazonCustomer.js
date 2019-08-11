@@ -33,19 +33,22 @@ function start() {
         }])
         .then(function(choice) {
             connection.query("select stock_quantity FROM products WHERE item_id = ?", [choice.chooseId], function(err, results) {
-                console.log(results[0].stock_quantity)
                 if (err) throw (err);
                 var quantity = results[0].stock_quantity;
                 var amount = parseInt([choice.howMany]);
                 console.log("Current Stock Available is", quantity);
                 console.log("Minus Your Purchase of", amount)
-                newQuantity = quantity - amount;
-                console.log("Updated Stock After Purchase is", newQuantity)
-                var query = connection.query("UPDATE products SET ? WHERE ?", [{ stock_quantity: newQuantity }, { item_id: choice.chooseId }], function(err, result) {
-                    if (err) throw err;
-                    console.log(result.affectedRows + " record(s) updated");
-                });
-                console.log(query.sql);
+                if (quantity > amount) {
+                    newQuantity = quantity - amount;
+                    console.log("Updated Stock After Purchase is", newQuantity)
+                    var query = connection.query("UPDATE products SET ? WHERE ?", [{ stock_quantity: newQuantity }, { item_id: choice.chooseId }], function(err, result) {
+                        if (err) throw err;
+                        console.log(result.affectedRows + " record(s) updated");
+                    });
+                    console.log(query.sql);
+                } else {
+                    console.log("Insufficient quantity!");
+                }
                 connection.query("SELECT * FROM products", function(err, result) {
                     if (err) throw err;
                     console.table(result);
