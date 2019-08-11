@@ -1,5 +1,6 @@
 var mysql = require("mysql");
 var inquirer = require("inquirer");
+var table
 
 var connection = mysql.createConnection({
     host: "localhost",
@@ -13,11 +14,13 @@ connection.connect(function(err) {
     connection.query("SELECT * FROM products", function(err, result) {
         if (err) throw err;
         console.table(result);
+        table = result;
         start();
     })
 });
 
 function start() {
+    var newQuantity;
     inquirer
         .prompt([{
             name: "chooseId",
@@ -30,16 +33,24 @@ function start() {
         }])
         .then(function(choice) {
             connection.query("select stock_quantity FROM products WHERE item_id = ?", [choice.chooseId], function(err, results) {
+                console.log(results[0].stock_quantity)
                 if (err) throw (err);
-                Object.keys(results).forEach(function(key) {
-                    var row = results[key];
-                    var quantity = row.stock_quantity;
-                    var amount = parseInt([choice.howMany]);
-                    console.log("Current Stock Available is", quantity);
-                    console.log("Minus Your Purchase of", amount)
-                    var newQuantity = quantity - amount;
-                    console.log("Updated Stock After Purchase is", newQuantity)
+                var quantity = results[0].stock_quantity;
+                var amount = parseInt([choice.howMany]);
+                console.log("Current Stock Available is", quantity);
+                console.log("Minus Your Purchase of", amount)
+                newQuantity = quantity - amount;
+                console.log("Updated Stock After Purchase is", newQuantity)
+                var query = connection.query("UPDATE products SET ? WHERE ?", [{ stock_quantity: newQuantity }, { item_id: choice.chooseId }], function(err, result) {
+                    if (err) throw err;
+                    console.log(result.affectedRows + " record(s) updated");
                 });
+                console.log(query.sql);
+                connection.query("SELECT * FROM products", function(err, result) {
+                    if (err) throw err;
+                    console.table(result);
+                    start();
+                })
             });
         });
 }
